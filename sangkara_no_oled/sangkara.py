@@ -74,17 +74,16 @@ JUMLAH_PEMAIN = 4
 NAMA_PEMAIN   = ["K1", "K2", "K3", "K4"]
 
 # ---------------------------------------------
-#  PIN MAP -- VERSI ESP32 CYD (Cheap Yellow Display)
+#  PIN MAP -- VERSI UTAMA TANPA OLED
 # ---------------------------------------------
-PIN_BUZZER = 21 # CYD buzzer default pin
-PIN_LED = [4, 16, 17] # CYD RGB LED default pins (Red, Green, Blue)
-# Buttons mapped to CN1/CN2 extensions:
-PIN_BTN_A     = 22
+PIN_BUZZER = 16
+PIN_LED = [23, 19, 18, 5]
+PIN_BTN_A     = 26
 PIN_BTN_B     = 27
-PIN_BTN_C     = 35
-PIN_BTN_D     = 34
-PIN_BTN_DADU  = 32
-PIN_BTN_RESET = 39
+PIN_BTN_C     = 14
+PIN_BTN_D     = 13
+PIN_BTN_DADU  = 4
+PIN_BTN_RESET = 25
 MAX_PETAK = 50
 zona_list   = []
 soal_pool   = {}
@@ -174,19 +173,19 @@ waktu_soal_mulai = 0
 is_quotes = False
 
 # ---------------------------------------------
-#  HARDWARE INIT (CYD LCD MOCK DISPLAY WRAPPER)
+#  HARDWARE INIT (MOCK OLED - NO PHYSICAL OLED REQUIRED)
 # ---------------------------------------------
-class CYD_LCD:
+class MockOLED:
     def fill(self, val):
         pass
     def show(self):
         pass
     def text(self, txt, x, y, col=1):
-        print("[CYD-LCD] (%d,%d): %s" % (x, y, txt))
+        print("[DISPLAY] (%d,%d): %s" % (x, y, txt))
     def fill_rect(self, x, y, w, h, col):
         pass
 
-oled = CYD_LCD()
+oled = MockOLED()
 buz  = Pin(PIN_BUZZER, Pin.OUT)
 buz.value(0)
 leds = [Pin(p, Pin.OUT) for p in PIN_LED]
@@ -523,7 +522,7 @@ def on_message(topic, msg):
                 zona = cari_zona(pos)
                 if zona:
                     zona_id = zona.get("id", "")
-                    range_end = int(zona.get("range_end", MAX_PETAK))
+                    range_end = int(zona.get("range_end", MAX_PETAG))
                     sisa_di_zona = range_end - pos
                     soal = ambil_soal_unik(zona_id, pos, sisa_di_zona)
                     if soal:
@@ -811,6 +810,7 @@ def captive_portal():
                 conn.close()
             except:
                 pass
+
 def check_wifi_reset_anytime():
     if not btn_dadu.value():
         t_start = time.ticks_ms()
@@ -837,6 +837,7 @@ def check_wifi_reset_anytime():
                 time.sleep(1)
                 machine.reset()
             time.sleep_ms(50)
+
 def connect_wifi():
     import gc
     gc.collect()
@@ -867,6 +868,7 @@ def connect_wifi():
     time.sleep(2)
     captive_portal()
     return False
+
 def deteksi_mode_jaringan():
     global API_BASE, MQTT_BROKER
     if not wlan_sta.isconnected():
@@ -940,6 +942,7 @@ def deteksi_mode_jaringan():
         o_header("MODE OFFLINE", "Server: 192.168.1.1")
         print("[NET] Fallback default offline:", e)
     time.sleep(1)
+
 def connect_mqtt(silent=False):
     global mqtt_client
     if not silent:
@@ -987,6 +990,7 @@ def connect_mqtt(silent=False):
         if not silent:
             o_header("MQTT GAGAL")
         return False
+
 def reset_game():
     global state, soal_aktif, waktu_soal_mulai, is_quotes
     state = buat_state()
@@ -1003,6 +1007,7 @@ def reset_game():
     o_state()
     pub_state("reset")
     kirim_posisi_api()
+
 def lempar_dadu():
     global is_quotes, waktu_soal_mulai, soal_fase
     if state["fase"] != "lempar" or state["pemenang"] >= 0:
@@ -1102,6 +1107,7 @@ def lempar_dadu():
     time.sleep(3)
     pub_state("quotes")
     next_turn()
+
 def proses_jawaban(klp_char):
     global is_quotes
     if state["fase"] != "jawab":
@@ -1171,6 +1177,7 @@ def proses_jawaban(klp_char):
     time.sleep(2)
     pub_state("jawaban")
     next_turn()
+
 def next_turn():
     state["fase"]    = "lempar"
     state["giliran"] = (state["giliran"] + 1) % JUMLAH_PEMAIN
@@ -1178,6 +1185,7 @@ def next_turn():
     led_giliran()
     o_state()
     pub_state("next_turn")
+
 def main():
     global mqtt_client, waktu_soal_mulai, fase_membaca, soal_fase
     o_header("SANGKARA", "Kelompok " + str(KELOMPOK_ID))
