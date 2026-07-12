@@ -218,7 +218,15 @@ def start():
                     </form>''')
                 else:
                     failed_attempts[client_ip] = failed_attempts.get(client_ip, 0) + 1
-                    send_html('<h3>Login Admin</h3><p style="color:red;font-size:14px;">Kata sandi salah!</p><form method="POST" action="/login"><input type="password" name="admin_pass" placeholder="Password Admin" required><button type="submit">Login</button></form>')
+                    send_html('''<h3>Login Admin</h3>
+                    <form method="POST" action="/login" style="margin:0;">
+                    <div style="position:relative;width:100%;margin:10px 0;">
+                        <input type="password" id="pass_field" name="admin_pass" placeholder="Password Admin" style="padding-right:40px;margin:0;" required>
+                        <span onclick="togglePass('pass_field', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;display:flex;align-items:center;user-select:none;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                    </div>
+                    <p style="color:red;font-size:14px;margin:10px 0 0 0;">Kata sandi salah!</p>
+                    <button type="submit">Login</button>
+                    </form>''')
             
             elif "POST /save " in req_str:
                 parts = req_str.split("\r\n\r\n")
@@ -261,7 +269,14 @@ def start():
                     send_html('<h3>Gagal</h3><p style="color:red;font-size:14px;">SSID tidak boleh kosong!</p><a href="/"><button>Kembali</button></a>')
             
             else:
-                send_html('<h3>Login Admin</h3><form method="POST" action="/login"><input type="password" name="admin_pass" placeholder="Password Admin" required><button type="submit">Login</button></form>')
+                send_html('''<h3>Login Admin</h3>
+                <form method="POST" action="/login" style="margin:0;">
+                <div style="position:relative;width:100%;margin:10px 0;">
+                    <input type="password" id="pass_field" name="admin_pass" placeholder="Password Admin" style="padding-right:40px;margin:0;" required>
+                    <span onclick="togglePass('pass_field', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;display:flex;align-items:center;user-select:none;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                </div>
+                <button type="submit">Login</button>
+                </form>''')
                 
         except Exception as e:
             print("Client handler error:", e)
