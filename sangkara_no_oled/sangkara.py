@@ -912,7 +912,7 @@ def deteksi_mode_jaringan():
     print("[NET] Mengecek konektivitas internet...")
     o_header("SANGKARA", "Cek Internet...")
     broker_online = "broker.hivemq.com"
-    api_online = "https://lidm-api.irmajetson.my.id"
+    api_online = "http://lidm-api.irmajetson.my.id"
     is_online = False
     try:
         import usocket
