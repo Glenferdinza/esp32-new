@@ -69,7 +69,7 @@ TOPIC_ALARM_KLP     = ("sangkara/alarm/kelompok" + str(KELOMPOK_ID)).encode()
 TOPIC_JAWABAN = b"sangkara/jawaban"
 TOPIC_POSISI  = b"sangkara/posisi"
 TOPIC_STATUS  = b"sangkara/status"
-API_BASE = "https://lidm-api.irmajetson.my.id"
+API_BASE = "http://lidm-api.irmajetson.my.id"
 JUMLAH_PEMAIN = 4
 NAMA_PEMAIN   = ["K1", "K2", "K3", "K4"]
 
