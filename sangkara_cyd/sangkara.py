@@ -101,6 +101,7 @@ def cari_zona(posisi):
     return None
 
 def ambil_soal_unik(zona_id, pos_lama=1, sisa_di_zona=50):
+    res = None
     try:
         url = "%s/iot/ambil-soal?zona_id=%s&pos_lama=%d&sisa_di_zona=%d&kelompok_id=%d&giliran=%d" % (
             API_BASE, zona_id, pos_lama, sisa_di_zona, KELOMPOK_ID, state["giliran"]
@@ -112,15 +113,19 @@ def ambil_soal_unik(zona_id, pos_lama=1, sisa_di_zona=50):
         res = urequests.get(url, timeout=timeout_val)
         if res.status_code == 200:
             soal = res.json()
-            res.close()
             g = state["giliran"]
             if g not in soal_terpakai:
                 soal_terpakai[g] = set()
             soal_terpakai[g].add(soal.get("id", ""))
             return soal
-        res.close()
     except Exception as e:
         print("[HTTP] Gagal ambil soal:", repr(e))
+    finally:
+        if res is not None:
+            try:
+                res.close()
+            except:
+                pass
     return None
 
 def ambil_quote(zona_id=""):
@@ -431,6 +436,7 @@ def kirim_status():
         "status":      "online",
         "timestamp":   time.time(),
     }
+    res = None
     try:
         mqtt_client.publish(TOPIC_STATUS, json.dumps(payload))
         res = urequests.put(
@@ -439,9 +445,14 @@ def kirim_status():
             data=json.dumps({"is_active": True}),
             timeout=2.0
         )
-        res.close()
     except:
         pass
+    finally:
+        if res is not None:
+            try:
+                res.close()
+            except:
+                pass
 
 def on_message(topic, msg):
     print("[MQTT] Pesan masuk pada:", topic.decode() if isinstance(topic, bytes) else topic, "ukuran:", len(msg), "bytes")
