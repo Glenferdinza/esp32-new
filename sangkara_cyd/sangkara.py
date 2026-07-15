@@ -488,11 +488,11 @@ def on_message(topic, msg):
         try:
             d = json.loads(txt)
             global zona_list, soal_pool, quotes_pool
-            target_groups = d.get("target_groups", [])
-            if target_groups and len(target_groups) > 0:
-                if KELOMPOK_ID not in target_groups:
-                    print("[MATERI] Diabaikan. Bukan untuk kelompok ini.")
-                    return
+            # target_groups = d.get("target_groups", [])
+            # if target_groups and len(target_groups) > 0:
+            #     if KELOMPOK_ID not in target_groups:
+            #         print("[MATERI] Diabaikan. Bukan untuk kelompok ini.")
+            #         return
             zona_list = d.get("zona", [])
             soal_pool = {}
             quotes_pool = {"global": []}
@@ -1337,25 +1337,29 @@ def main():
                         else:
                             kembalikan_tampilan()
                 elif key in ('*', 'RESET'):
-                    # Reset game: tahan 3 detik (debounced)
+                    # Reset game: tahan 3 detik (kebal bounce fisik)
                     o_efek("Tahan...", "reset game")
-                    t_start = time.ticks_ms()
                     is_reset_triggered = False
                     consecutive_released = 0
-                    while consecutive_released < 3:  # Abort jika dilepas selama 150ms berturut-turut
+                    
+                    # Tahan 3 detik = 60 iterasi * 50ms
+                    for _ in range(60):
                         if btn_reset.value():
                             consecutive_released += 1
                         else:
                             consecutive_released = 0
-                            
-                        if time.ticks_diff(time.ticks_ms(), t_start) > 3000:
-                            o_efek("RESET GAME", "")
-                            beep(600, 200)
-                            time.sleep(1)
-                            reset_game()
-                            is_reset_triggered = True
+                        
+                        if consecutive_released > 10:  # Batalkan hanya jika dilepas > 500ms berturut-turut
                             break
                         time.sleep_ms(50)
+                    else:
+                        # Loop selesai tanpa break -> sukses ditahan 3 detik
+                        o_efek("RESET GAME", "")
+                        beep(600, 200)
+                        time.sleep(1)
+                        reset_game()
+                        is_reset_triggered = True
+
                     if not is_reset_triggered:
                         kembalikan_tampilan()
                 elif key in ['A', 'B', 'C', 'D']:
