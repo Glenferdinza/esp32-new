@@ -487,11 +487,17 @@ def on_message(topic, msg):
         try:
             d = json.loads(txt)
             global zona_list, soal_pool, quotes_pool
-            # target_groups = d.get("target_groups", [])
-            # if target_groups and len(target_groups) > 0:
-            #     if KELOMPOK_ID not in target_groups:
-            #         print("[MATERI] Diabaikan. Bukan untuk kelompok ini.")
-            #         return
+            target_groups = d.get("target_groups", [])
+            if target_groups and len(target_groups) > 0:
+                tg_ints = []
+                for tg in target_groups:
+                    try:
+                        tg_ints.append(int(tg))
+                    except:
+                        pass
+                if KELOMPOK_ID not in tg_ints:
+                    print("[MATERI] Diabaikan. Bukan untuk kelompok:", KELOMPOK_ID)
+                    return
             zona_list = d.get("zona", [])
             soal_pool = {}
             quotes_pool = {"global": []}
@@ -533,10 +539,10 @@ def on_message(topic, msg):
                         soal_aktif["jawaban_benar"] = soal.get("jawaban_benar", "")
                         soal_aktif["batas_waktu"]   = int(soal.get("batas_waktu", 60))
                         sc_id = soal.get("studi_kasus_id", "")
-                        sc_text = soal.get("studi_kasus_text", "")
+                        sc_text = soal.get("studi_kasus_text", "") or ""
                         soal_aktif["studi_kasus_id"] = sc_id
                         waktu_soal_mulai = time.time()
-                        if sc_id and sc_id not in studi_kasus_dilihat.get(g, set()):
+                        if sc_id and sc_text.strip() and sc_id not in studi_kasus_dilihat.get(g, set()):
                             global fase_membaca
                             fase_membaca = True
                             if mqtt_client:
@@ -1069,9 +1075,9 @@ def lempar_dadu():
                 soal_aktif["jawaban_benar"] = soal.get("jawaban_benar", "")
                 soal_aktif["batas_waktu"]   = int(soal.get("batas_waktu", 60))
                 sc_id = soal.get("studi_kasus_id", "")
-                sc_text = soal.get("studi_kasus_text", "")
+                sc_text = soal.get("studi_kasus_text", "") or ""
                 soal_aktif["studi_kasus_id"] = sc_id
-                if sc_id and sc_id not in studi_kasus_dilihat.get(g, set()):
+                if sc_id and sc_text.strip() and sc_id not in studi_kasus_dilihat.get(g, set()):
                     global fase_membaca, waktu_soal_mulai
                     fase_membaca = True
                     waktu_soal_mulai = time.time()
