@@ -1342,10 +1342,17 @@ def main():
                         else:
                             kembalikan_tampilan()
                 elif key in ('*', 'RESET'):
+                    # Reset game: tahan 3 detik (debounced)
                     o_efek("Tahan...", "reset game")
                     t_start = time.ticks_ms()
                     is_reset_triggered = False
-                    while not btn_reset.value():
+                    consecutive_released = 0
+                    while consecutive_released < 3:  # Abort jika dilepas selama 150ms berturut-turut
+                        if btn_reset.value():
+                            consecutive_released += 1
+                        else:
+                            consecutive_released = 0
+                            
                         if time.ticks_diff(time.ticks_ms(), t_start) > 3000:
                             o_efek("RESET GAME", "")
                             beep(600, 200)
