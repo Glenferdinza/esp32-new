@@ -107,7 +107,8 @@ def ambil_soal_unik(zona_id, pos_lama=1, sisa_di_zona=50):
         print("[HTTP] Ambil soal:", url)
         import gc
         gc.collect()
-        res = urequests.get(url, timeout=10.0)
+        timeout_val = 10.0 if API_BASE.startswith("https://") else 2.0
+        res = urequests.get(url, timeout=timeout_val)
         if res.status_code == 200:
             soal = res.json()
             res.close()
