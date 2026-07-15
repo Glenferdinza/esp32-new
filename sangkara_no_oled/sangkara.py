@@ -405,14 +405,12 @@ def kirim_jawaban_api(jawaban, waktu_jawab):
     if not mqtt_client:
         return
     payload = {
-        "materi_id":    soal_aktif.get("materi_id", ""),
         "soal_id":      soal_aktif.get("soal_id", ""),
         "jawaban":      jawaban,
         "waktu_jawab":  waktu_jawab,
         "batas_waktu":  soal_aktif.get("batas_waktu", 60),
-        "judul_materi": soal_aktif.get("judul_materi", ""),
-        "kasus_soal":   soal_aktif.get("soal", ""),
         "kelompok_id":  KELOMPOK_ID,
+        "player_id":    state["giliran"] + 1,
     }
     try:
         mqtt_client.publish(TOPIC_JAWABAN, json.dumps(payload))
@@ -1186,6 +1184,21 @@ def next_turn():
     o_state()
     pub_state("next_turn")
 
+def kembalikan_tampilan():
+    global fase_membaca, is_quotes, jawaban_terpilih
+    if fase_membaca:
+        sc_text = soal_aktif.get("studi_kasus_text", "") or "Baca studi kasus di layar utama..."
+        o_membaca_studi_kasus(sc_text)
+    elif state["fase"] == "jawab":
+        if not is_quotes:
+            is_multi = len(soal_aktif.get("jawaban_benar", "")) > 1
+            if is_multi:
+                o_soal_opsi(soal_aktif["soal"], jawaban_terpilih)
+            else:
+                o_soal_tanya(soal_aktif["soal"])
+    else:
+        o_state()
+
 def main():
     global mqtt_client, waktu_soal_mulai, fase_membaca, soal_fase
     o_header("SANGKARA", "Kelompok " + str(KELOMPOK_ID))
@@ -1327,7 +1340,7 @@ def main():
                         elif state["fase"] == "lempar" and state["pemenang"] < 0:
                             lempar_dadu()
                         else:
-                            o_state()
+                            kembalikan_tampilan()
                 elif key in ('*', 'RESET'):
                     o_efek("Tahan...", "reset game")
                     t_start = time.ticks_ms()
@@ -1342,7 +1355,7 @@ def main():
                             break
                         time.sleep_ms(50)
                     if not is_reset_triggered:
-                        o_state()
+                        kembalikan_tampilan()
                 elif key in ['A', 'B', 'C', 'D']:
                     if state["fase"] == "jawab" and not is_quotes:
                         is_multi = len(soal_aktif.get("jawaban_benar", "")) > 1
