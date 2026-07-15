@@ -106,7 +106,9 @@ def ambil_soal_unik(zona_id, pos_lama=1, sisa_di_zona=50):
             API_BASE, zona_id, pos_lama, sisa_di_zona, KELOMPOK_ID, state["giliran"]
         )
         print("[HTTP] Ambil soal:", url)
-        res = urequests.get(url, timeout=3.5)
+        import gc
+        gc.collect()
+        res = urequests.get(url, timeout=10.0)
         if res.status_code == 200:
             soal = res.json()
             res.close()
