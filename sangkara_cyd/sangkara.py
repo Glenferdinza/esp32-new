@@ -159,7 +159,7 @@ def ambil_quote(zona_id=""):
     for i, q in enumerate(pilihan_zona):
         kandidat.append((zona_id, i, q))
     if not kandidat:
-        return "Terus Melangkah, Jangan Menyerah!"
+        return None
     key_sumber, idx, text = random.choice(kandidat)
     if key_sumber in quotes_pool:
         quotes_pool[key_sumber].pop(idx)
@@ -590,11 +590,12 @@ def on_message(topic, msg):
                             o_soal_tanya(soal_aktif["soal"])
                             pub_state("landing_soal")
                     else:
-                        global is_quotes
-                        is_quotes = True
                         quote = ambil_quote(zona_id)
-                        o_soal(quote)
-                        pub_state("quotes")
+                        if quote:
+                            global is_quotes
+                            is_quotes = True
+                            o_soal(quote)
+                            pub_state("quotes")
                         next_turn()
             o_header("MATERI OK", d.get("judul_materi", "")[:16])
             beep_ok()
@@ -1128,14 +1129,17 @@ def lempar_dadu():
                     print("[SOAL]", NAMA_PEMAIN[g], "zona:", zona_nama,
                           "| soal:", soal_aktif["soal_id"])
                     return
-    is_quotes = True
     quote = ambil_quote(zona_id)
-    o_soal(quote)
-    beep(500, 100)
-    print("[QUOTES]", NAMA_PEMAIN[g], "zona:", zona_nama, "|", quote[:30])
-    time.sleep(3)
-    pub_state("quotes")
-    next_turn()
+    if quote:
+        is_quotes = True
+        o_soal(quote)
+        beep(500, 100)
+        print("[QUOTES]", NAMA_PEMAIN[g], "zona:", zona_nama, "|", quote[:30])
+        time.sleep(3)
+        pub_state("quotes")
+        next_turn()
+    else:
+        next_turn()
 def proses_jawaban(klp_char):
     global is_quotes
     if state["fase"] != "jawab":
