@@ -4,7 +4,7 @@ gc.collect()
 import network
 wlan_sta = network.WLAN(network.STA_IF)
 wlan_ap  = network.WLAN(network.AP_IF)
-import time, json, random, urequests, machine
+import time, json, random, machine
 import usocket as socket
 from machine import Pin, SoftI2C, PWM
 from umqtt.simple import MQTTClient
@@ -69,6 +69,9 @@ TOPIC_ALARM_KLP     = ("sangkara/alarm/kelompok" + str(KELOMPOK_ID)).encode()
 TOPIC_JAWABAN = b"sangkara/jawaban"
 TOPIC_POSISI  = b"sangkara/posisi"
 TOPIC_STATUS  = b"sangkara/status"
+TOPIC_SOAL_REQ = b"sangkara/request/soal"
+TOPIC_SOAL_RES = ("sangkara/soal/kelompok" + str(KELOMPOK_ID)).encode()
+soal_diterima_mqtt = None
 API_BASE = "http://lidm-api.irmajetson.my.id"
 JUMLAH_PEMAIN = 4
 NAMA_PEMAIN   = ["K1", "K2", "K3", "K4"]
@@ -101,31 +104,49 @@ def cari_zona(posisi):
     return None
 
 def ambil_soal_unik(zona_id, pos_lama=1, sisa_di_zona=50):
-    res = None
+    global soal_diterima_mqtt
+    soal_diterima_mqtt = None
+    
+    if not mqtt_client:
+        print("[MQTT] Client tidak aktif, tidak bisa request soal")
+        return None
+
+    payload = {
+        "zona_id": zona_id,
+        "kelompok_id": KELOMPOK_ID,
+        "player_id": state["giliran"] + 1
+    }
+    
     try:
-        url = "%s/iot/ambil-soal?zona_id=%s&pos_lama=%d&sisa_di_zona=%d&kelompok_id=%d&giliran=%d" % (
-            API_BASE, zona_id, pos_lama, sisa_di_zona, KELOMPOK_ID, state["giliran"]
-        )
-        print("[HTTP] Ambil soal:", url)
-        import gc
-        gc.collect()
-        timeout_val = 10.0 if API_BASE.startswith("https://") else 2.0
-        res = urequests.get(url, timeout=timeout_val)
-        if res.status_code == 200:
-            soal = res.json()
-            g = state["giliran"]
-            if g not in soal_terpakai:
-                soal_terpakai[g] = set()
-            soal_terpakai[g].add(soal.get("id", ""))
-            return soal
+        print("[MQTT] Request soal untuk zona:", zona_id)
+        mqtt_client.publish(TOPIC_SOAL_REQ, json.dumps(payload))
     except Exception as e:
-        print("[HTTP] Gagal ambil soal:", repr(e))
-    finally:
-        if res is not None:
-            try:
-                res.close()
-            except:
-                pass
+        print("[MQTT] Gagal publish request soal:", e)
+        return None
+
+    # Tunggu respon selama maksimal 3.0 detik
+    start_wait = time.time()
+    while soal_diterima_mqtt is None and (time.time() - start_wait) < 3.0:
+        try:
+            mqtt_client.check_msg()
+        except:
+            pass
+        time.sleep_ms(50)
+
+    if soal_diterima_mqtt:
+        soal = soal_diterima_mqtt
+        soal_diterima_mqtt = None # Reset
+        if "error" in soal:
+            print("[MQTT] Respon soal berisi error:", soal["error"])
+            return None
+            
+        g = state["giliran"]
+        if g not in soal_terpakai:
+            soal_terpakai[g] = set()
+        soal_terpakai[g].add(soal.get("id", ""))
+        return soal
+
+    print("[MQTT] Timeout menunggu respon soal")
     return None
 
 def ambil_quote(zona_id=""):
@@ -436,28 +457,23 @@ def kirim_status():
         "status":      "online",
         "timestamp":   time.time(),
     }
-    res = None
     try:
         mqtt_client.publish(TOPIC_STATUS, json.dumps(payload))
-        res = urequests.put(
-            API_BASE + "/iot/kelompok/" + str(KELOMPOK_ID),
-            headers={"Content-Type": "application/json"},
-            data=json.dumps({"is_active": True}),
-            timeout=2.0
-        )
     except:
         pass
-    finally:
-        if res is not None:
-            try:
-                res.close()
-            except:
-                pass
 
 def on_message(topic, msg):
     print("[MQTT] Pesan masuk pada:", topic.decode() if isinstance(topic, bytes) else topic, "ukuran:", len(msg), "bytes")
     global soal_aktif, waktu_soal_mulai
     txt = msg.decode()
+    
+    if topic == TOPIC_SOAL_RES:
+        global soal_diterima_mqtt
+        try:
+            soal_diterima_mqtt = json.loads(txt)
+        except Exception as e:
+            print("[MQTT] Error parse soal response:", e)
+        return
     if topic == TOPIC_ALARM_GLOBAL or topic == TOPIC_ALARM_KLP:
         try:
             d = json.loads(txt)
@@ -991,7 +1007,7 @@ def connect_mqtt(silent=False):
         c = MQTTClient(MQTT_ID, broker, port=MQTT_PORT, keepalive=60)
         c.sock = s
         c.set_callback(on_message)
-        for t in [TOPIC_SOAL, TOPIC_ALARM_GLOBAL, TOPIC_ALARM_KLP, TOPIC_CMD, TOPIC_MATERI]:
+        for t in [TOPIC_SOAL, TOPIC_ALARM_GLOBAL, TOPIC_ALARM_KLP, TOPIC_CMD, TOPIC_MATERI, TOPIC_SOAL_RES]:
             c.subscribe(t)
         mqtt_client = c
         if not silent:
